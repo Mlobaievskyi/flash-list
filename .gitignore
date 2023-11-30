@@ -221,7 +221,3 @@ website/.tweet-cache
 
 # local
 .history
-documentation/
-fabricfixture
-fixture
-shared
