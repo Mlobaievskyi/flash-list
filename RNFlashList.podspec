@@ -1,8 +1,9 @@
 require 'json'
 
+ios_platform = new_arch_enabled ? '12.4' : '11.0'
+
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
-folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
 fabric_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
 Pod::Spec.new do |s|
@@ -18,26 +19,31 @@ Pod::Spec.new do |s|
   s.swift_version    = '5.0'
   s.dependency "React-Core"
 
-  if fabric_enabled
-    s.compiler_flags = folly_compiler_flags + " -DRCT_NEW_ARCH_ENABLED=1"
-    s.pod_target_xcconfig    = {
-        "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
-        "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
-        "CLANG_CXX_LANGUAGE_STANDARD" => "c++17",
-        'OTHER_SWIFT_FLAGS' => '-D RCT_NEW_ARCH_ENABLED',
-    }
-
-    s.dependency "React-RCTFabric"
-    s.dependency "React-Codegen"
-    s.dependency "RCT-Folly"
-    s.dependency "RCTRequired"
-    s.dependency "RCTTypeSafety"
-    s.dependency "ReactCommon/turbomodule/core"
-    s.ios.deployment_target = "12.4"
-    s.platforms        = { :ios => '12.4', :tvos => '12.0' }
+  if defined?(install_modules_dependencies()) != nil
+    install_modules_dependencies(s);
   else
-    # Settings for non-fabric builds
-    s.platforms        = { :ios => '11.0', :tvos => '12.0' }
+    if fabric_enabled
+      folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
+
+      s.compiler_flags = folly_compiler_flags + " -DRCT_NEW_ARCH_ENABLED=1"
+      s.pod_target_xcconfig    = {
+          "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
+          "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
+          "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+          'OTHER_SWIFT_FLAGS' => '-D RCT_NEW_ARCH_ENABLED',
+      }
+
+      s.dependency "React-RCTFabric"
+      s.dependency "React-Codegen"
+      s.dependency "RCT-Folly"
+      s.dependency "RCTRequired"
+      s.dependency "RCTTypeSafety"
+      s.dependency "ReactCommon/turbomodule/core"
+      s.ios.deployment_target = ios_platform
+      s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
+    else
+      # Settings for non-fabric builds
+      s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
   end
 
   # Tests spec
