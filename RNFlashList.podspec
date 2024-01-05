@@ -1,10 +1,11 @@
 require 'json'
 
-ios_platform = new_arch_enabled ? '12.4' : '11.0'
+fabric_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
+ios_platform = fabric_enabled ? '12.4' : '11.0'
 
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
-fabric_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
+
 
 Pod::Spec.new do |s|
   s.name             = 'RNFlashList'
@@ -44,6 +45,7 @@ Pod::Spec.new do |s|
     else
       # Settings for non-fabric builds
       s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
+    end
   end
 
   # Tests spec
