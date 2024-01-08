@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   s.source_files     = 'ios/Sources/**/*'
   s.requires_arc     = true
   s.swift_version    = '5.0'
-  s.dependency "React-Core"
+  s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
 
   if defined?(install_modules_dependencies()) != nil
     install_modules_dependencies(s);
@@ -30,7 +30,7 @@ Pod::Spec.new do |s|
       s.pod_target_xcconfig    = {
           "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
           "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
-          "CLANG_CXX_LANGUAGE_STANDARD" => "c++20",
+          "CLANG_CXX_LANGUAGE_STANDARD" => "c++17",
           'OTHER_SWIFT_FLAGS' => '-D RCT_NEW_ARCH_ENABLED',
       }
 
@@ -41,10 +41,10 @@ Pod::Spec.new do |s|
       s.dependency "RCTTypeSafety"
       s.dependency "ReactCommon/turbomodule/core"
       s.ios.deployment_target = ios_platform
-      s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
     else
       # Settings for non-fabric builds
-      s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
+      s.dependency "React-Core"
+
     end
   end
 
