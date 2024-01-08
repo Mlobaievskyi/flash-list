@@ -5,10 +5,8 @@ import UIKit
 /// Container for all RecyclerListView children. This will automatically remove all gaps and overlaps for GridLayouts with flexible spans.
 /// Note: This cannot work for masonry layouts i.e, pinterest like layout
 @objc public class AutoLayoutView: UIView {
-    #if RCT_NEW_ARCH_ENABLED
     @objc public var onBlankAreaEventHandler: ((CGFloat, CGFloat) -> Void)?
-    #endif
-    
+
     @objc(onBlankAreaEvent)
     var onBlankAreaEvent: RCTDirectEventBlock?
 
@@ -49,13 +47,9 @@ import UIKit
     private var lastMaxBound: CGFloat = 0
     /// Tracks where first pixel is drawn in the visible window
     private var lastMinBound: CGFloat = 0
-    
+
     private var viewsToLayout: [UIView] {
-        #if RCT_NEW_ARCH_ENABLED
         return superview?.subviews ?? []
-        #else
-        return subviews
-        #endif
     }
 
     override public func layoutSubviews() {
@@ -81,16 +75,7 @@ import UIKit
             distanceFromWindowEnd: distanceFromWindowEnd
         )
 
-        #if RCT_NEW_ARCH_ENABLED
         onBlankAreaEventHandler?(blankOffsetStart, blankOffsetEnd)
-        #else
-        onBlankAreaEvent?(
-            [
-                "offsetStart": blankOffsetStart,
-                "offsetEnd": blankOffsetEnd,
-            ]
-        )
-        #endif
     }
 
     func getScrollView() -> UIScrollView? {
@@ -294,12 +279,8 @@ import UIKit
 
     private func footer() -> UIView? {
         // On Fabric, AutoLayoutView is wrapped with AutoLayoutViewComponentView, so we need to go up one more level
-        #if RCT_NEW_ARCH_ENABLED
         let parentSubviews = superview?.superview?.subviews
-        #else
-        let parentSubviews = superview?.subviews
-        #endif
-        
+
         return parentSubviews?.first(where:{($0 as? CellContainerComponentView)?.index == -1})
     }
 }
