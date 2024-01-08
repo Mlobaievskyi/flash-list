@@ -1,56 +1,55 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+require 'json'
 
-platform :ios, min_ios_version_supported
-prepare_react_native_project!
-# If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
-# because `react-native-flipper` depends on (FlipperKit,...) that will be excluded
-#
-# To fix this you can also exclude `react-native-flipper` using a `react-native.config.js`
-# ```js
-# module.exports = {
-#   dependencies: {
-#     ...(process.env.NO_FLIPPER ? { 'react-native-flipper': { platforms: { ios: null } } } : {}),
-# ```
-flipper_config = ENV['NO_FLIPPER'] == "1" ? FlipperConfiguration.disabled : FlipperConfiguration.enabled
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
-  
-target 'FlatListPro' do
-  config = use_native_modules!
-  # Flags change depending on the env values.
-  flags = get_default_flags()
+fabric_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
+ios_platform = fabric_enabled ? '12.4' : '11.0'
 
-  use_react_native!(
-    :path => config[:reactNativePath],
-    # Hermes is now enabled by default. Disable by setting this flag to false.
-    :hermes_enabled => flags[:hermes_enabled],
-    :fabric_enabled => flags[:fabric_enabled],
-    # Enables Flipper.
-    #
-    # Note that if you have use_frameworks! enabled, Flipper will not work and
-    # you should disable the next line.
-    # :flipper_configuration => flipper_config,
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
-  )
+package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
-  pod "RNFlashList", path: "../../RNFlashList.podspec", testspecs: ['Tests'], inhibit_warnings: false
 
-  post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
-    react_native_post_install(
-      installer,
-      config[:reactNativePath],
-      :mac_catalyst_enabled => false
-    )
-    __apply_Xcode_12_5_M1_post_install_workaround(installer)
+
+Pod::Spec.new do |s|
+  s.name             = 'RNFlashList'
+  s.version          = package['version']
+  s.summary          = package['description']
+  s.homepage         = package['homepage']
+  s.license          = package['license']
+  s.author           = package['author']
+  s.source           = { git: 'https://github.com/shopify/flash-list.git', tag: "v#{s.version}" }
+  s.source_files     = 'ios/Sources/**/*'
+  s.requires_arc     = true
+  s.swift_version    = '5.0'
+  s.platforms        = { :ios => ios_platform, :tvos => '12.0' }
+
+  if defined?(install_modules_dependencies()) != nil
+    install_modules_dependencies(s);
+  else
+    if fabric_enabled
+      folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
+
+      s.compiler_flags = folly_compiler_flags + " -DRCT_NEW_ARCH_ENABLED=1"
+      s.pod_target_xcconfig    = {
+          "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/boost\"",
+          "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
+          "CLANG_CXX_LANGUAGE_STANDARD" => "c++17",
+          'OTHER_SWIFT_FLAGS' => '-D RCT_NEW_ARCH_ENABLED',
+      }
+
+      s.dependency "React-RCTFabric"
+      s.dependency "React-Codegen"
+      s.dependency "RCT-Folly"
+      s.dependency "RCTRequired"
+      s.dependency "RCTTypeSafety"
+      s.dependency "ReactCommon/turbomodule/core"
+      s.ios.deployment_target = ios_platform
+    else
+      # Settings for non-fabric builds
+      s.dependency "React-Core"
+    end
+  end
+
+  # Tests spec
+  s.test_spec 'Tests' do |test_spec|
+    test_spec.source_files = 'ios/Tests/**/*'
+    test_spec.framework = 'XCTest'
   end
 end
